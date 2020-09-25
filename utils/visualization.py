@@ -134,25 +134,24 @@ class BBoxVisualization():
     def draw_bird_eye(self, background_eye, dist, dist2, reprj_point):
 
         for i in range(len(dist)):
-                #draw_boxed_text(background_eye, "first", (200 + (int(dist[i][0][0] * 50)), int(dist[i][0][2] * 50)), (0, 255, 0))
-                #cv2.circle(background_eye, (200 + (int(dist[i][0][0] * 50)), int(dist[i][0][2] * 50)), radius=8, color=(0, 255, 0), thickness=-1)
+                draw_boxed_text(background_eye, "first", (200 + (int(dist[i][0][0] * 50)), int(dist[i][0][2] * 50)), (0, 255, 0))
+                cv2.circle(background_eye, (200 + (int(dist[i][0][0] * 50)), int(dist[i][0][2] * 50)), radius=8, color=(0, 255, 0), thickness=-1)
                 #print(dist[i][0][2])
         
-                cv2.circle(background_eye, (200 + (int(dist[i][0][0] * 50)), int(dist[i][0][2] * 50)), radius=2, color=(255, 255, 0), thickness=-1)
-                f = open("test_asse_x.csv", "a+")
-                f.write(str(dist[i][0][1]) + "," + str(dist[i][0][2]) + "\n")
-                print("x", str(dist[i][0][0]))
-                print("z", str(dist[i][0][2]))
-                f.close()
+                #f = open("test_asse_x.csv", "a+")
+                #f.write(str(dist[i][0][1]) + "," + str(dist[i][0][2]) + "\n")
+                #print("x", str(dist[i][0][0]))
+                #print("z", str(dist[i][0][2]))
+                #f.close()
 
         for j in range(len(dist2)):
-                #draw_boxed_text(background_eye, "second", (200 + (int(dist2[j][0][0] * 50)), int(dist2[j][0][2] * 50)), (0, 255, 0))
+                draw_boxed_text(background_eye, "second", (200 + (int(dist2[j][0][0] * 50)), int(dist2[j][0][2] * 50)), (0, 255, 0))
                 cv2.circle(background_eye, (200 + (int(dist2[j][0][0] * 50)), int(dist2[j][0][2] * 50)), radius=2, color=(255, 255, 0), thickness=-1)
-                f = open("test_asse_x.csv", "a+")
-                f.write(str(dist2[j][0][1]) + "," + str(dist2[j][0][2]) + "\n")
-                print("x", str(dist2[j][0][0]))
-                print("z", str(dist2[j][0][2]))
-                f.close()
+                #f = open("test_asse_x.csv", "a+")
+                #f.write(str(dist2[j][0][1]) + "," + str(dist2[j][0][2]) + "\n")
+                #print("x", str(dist2[j][0][0]))
+                #print("z", str(dist2[j][0][2]))
+                #f.close()
 
         for k in range(len(reprj_point)):
                 draw_boxed_text(background_eye, "rep", (200 + (int(reprj_point[0] * 50)), int(reprj_point[2] * 50)), (0, 255, 0))

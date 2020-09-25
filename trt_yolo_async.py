@@ -61,7 +61,7 @@ class TrtThread(threading.Thread):
     In other words, the TrtThread acts as the producer while the
     main thread is the consumer.
     """
-    def __init__(self, distance_queue, cam, conn_device, h, w, model, category_num, master, conf_th):
+    def __init__(self, distance_queue, frame_queue, cam, conn_device, h, w, model, category_num, master, conf_th):
         """__init__
 
         # Arguments
@@ -79,6 +79,7 @@ class TrtThread(threading.Thread):
         self.model = model
         self.master = master
         self.distance_queue = distance_queue
+        self.frame_queue = frame_queue
         self.category_num = category_num
         self.conf_th = conf_th
         self.cuda_ctx = None  # to be created when run
@@ -111,12 +112,14 @@ class TrtThread(threading.Thread):
         logging.debug('start running...')
         self.running = True
         while self.running:
-        
             while True:
-                color_frame, aligned_depth_frame = self.cam.get_images(self.cam.get_pipeline(), filters=False)                
+                color_frame, aligned_depth_frame = self.cam.get_images(self.cam.get_pipeline(), filters=True)                
                 #Convert images to numpy arrays
                 img, colorized_depth = self.cam.get_image_data(color_frame, aligned_depth_frame, colorizer)
                 
+                if not self.frame_queue.full():
+                    self.frame_queue.put(cv2.resize(img, (600, 338)))
+
                 if self.master:
                     depth_to_color_extrin = aligned_depth_frame.profile.get_extrinsics_to(color_frame.profile)
                 else:
@@ -130,13 +133,14 @@ class TrtThread(threading.Thread):
                     
                 if not self.distance_queue.full():
                     self.distance_queue.put(distances)
-                #print(fps)
+                print("current fps: " + str(fps))
                 
                 toc = time.time()
                 curr_fps = 1.0 / (toc - tic)
                 # calculate an exponentially decaying average of fps number
                 fps = curr_fps if fps == 0.0 else (fps*0.95 + curr_fps*0.05)
                 tic = toc
+                
 
         del self.trt_yolo
         self.cuda_ctx.pop()
@@ -148,14 +152,14 @@ class TrtThread(threading.Thread):
         self.join()
 
 
-def birdEyeViewer(distance_queue, distance_queue2, vis):
+def birdEyeViewer(distance_queue, distance_queue2, frame_queue, vis_frame, vis):
     logging.debug("Bird-eye viewer")
 
     dist, dist2, reprj_point = [], [], []
-    background_eye = np.full((800,525,3), 125, dtype=np.uint8) # background for bird's eye
 
     while True:
-        
+        background_eye = np.full((800,525,3), 125, dtype=np.uint8) # background for bird's eye
+
         key = cv2.waitKey(1)
         if key == 27:  # ESC key: quit program
             break
@@ -165,7 +169,8 @@ def birdEyeViewer(distance_queue, distance_queue2, vis):
 
         if not distance_queue2.empty():
             dist2 = distance_queue2.get()
-        
+
+        """
         # reprojecting 3D points based on master node
         if (len(dist) > 0 and dist[0][-1] != 0): # master node
             depth_to_color_extrin = dist[0][-1] # class 'pyrealsense2.extrinsics'
@@ -173,39 +178,18 @@ def birdEyeViewer(distance_queue, distance_queue2, vis):
             if len(dist2) > 0:
                 reprj_point = rs.rs2_transform_point_to_point(depth_to_color_extrin, list(dist2[0][0]))
                 #print(reprj_point)
-        
+        """
 
         img = vis.draw_bird_eye(background_eye, dist, dist2, reprj_point)
         cv2.imshow("Bird eye viewer", img)
+        
+        if vis_frame: # visualize rgb image
+            if not frame_queue.empty():
+                cv2.imshow("Frame viewer", frame_queue.get())
+
     return
 
-"""
-class BirdEyeThread(threading.Thread):
-    def __init__(self, distance_queue, distance_queue2, vis):
-        threading.Thread.__init__(self)
-        self.vis = vis
-        self.distance_queue = distance_queue
-        self.distance_queue2 = distance_queue2
 
-    def run(self):
-        logging.debug("Display distances")
-        background_eye = np.full((800,525,3), 125, dtype=np.uint8) # background for bird's eye
-        dist, dist2 = [], []
-
-        while True:
-            if not self.distance_queue.empty():
-                dist = self.distance_queue.get()
-                print(dist)
-            if not self.distance_queue2.empty():
-                dist2 = self.distance_queue2.get()
-                print(dist2)
-            
-            img = self.vis.draw_bird_eye(background_eye, dist, dist2)
-            cv2.imgshow("Bird eye viewer", img)
-        return
-    def stop(self):
-        self.join()
-"""
 
 # calculate x,y, width, height, center_x and center_y, torso_upper_x, torso_upper_y, torso_lower_x, torso_lower_y
 def calculate_boxes_values(boxes, clss):
@@ -289,17 +273,19 @@ def main():
     vis = BBoxVisualization(cls_dict)
     
     distance_queue = queue.Queue(100)
+    frame_queue = queue.Queue(2)
+
     distance_queue2 = queue.Queue(100)
 
-    trt_thread = TrtThread(distance_queue, camera, connected_devices[0], h, w, args.model, args.category_num, True, conf_th=0.5).start()
+    trt_thread = TrtThread(distance_queue, frame_queue, camera, connected_devices[0], h, w, args.model, args.category_num, True, conf_th=0.5).start()
     #time.sleep(.1)
     #trt_thread2 = TrtThread(distance_queue2, camera2, connected_devices[1], h, w, args.model, args.category_num, False, conf_th=0.5).start()
 
-    birdEyeViewer(distance_queue, distance_queue2, vis)  
- 
-    
+    #frameViewer(frame_queue)
+    birdEyeViewer(distance_queue, distance_queue2, frame_queue, True, vis)
+
     camera.stop_pipeline()
-    camera2.stop_pipeline()  
+    #camera2.stop_pipeline()  
 
     cv2.destroyAllWindows()
 

@@ -21,8 +21,8 @@ from utils.realsensecamera import *
 #from utils.camera import add_camera_args, Camera
 from utils.display import open_window, set_display, show_fps
 from utils.visualization import BBoxVisualization
-import util_functions as uf
-from constants import *
+import utils.util_functions as uf
+from utils.constants import *
 import pyrealsense2 as rs
 
 WINDOW_NAME = 'TrtYOLODemo'
