@@ -131,17 +131,38 @@ class BBoxVisualization():
               cv2.circle(img, (int(i[3]), int(i[4])), radius=4, color=(0, 255, 255), thickness=-1)
         return img
     
-    def draw_bird_eye(self, background_eye, dist, dist2, reprj_point):
+    def draw_bird_eye(self, background_eye, dist, dist2, reprj_point, fig, ax, redline, img):
+        dim_x = 4.95
+        dim_y = 16.70
 
+        dist_orig = 2.49
+        alfa = 27.961 * np.pi / 180.
+        
+        ax.cla()
         for i in range(len(dist)):
-                draw_boxed_text(background_eye, "first", (200 + (int(dist[i][0][0] * 50)), int(dist[i][0][2] * 50)), (0, 255, 0))
-                cv2.circle(background_eye, (200 + (int(dist[i][0][0] * 50)), int(dist[i][0][2] * 50)), radius=8, color=(0, 255, 0), thickness=-1)
+                ax.set_xlim([0, dim_x])
+                ax.set_ylim([0, dim_y])
+                ax.scatter(redline[0], redline[1], c="r")
+                ax.scatter(redline[2], redline[3], c="r")
+                ax.scatter(redline[4], redline[5], c="r")
+                ax.scatter(redline[6], redline[7], c="r")                
+                #ax.scatter(float(dist[i][0][0] + dist_orig - (float(dist[i][0][2] * np.cos(alfa)) * np.sin(0.17/9.05)) ), float(dist[i][0][2] * np.cos(alfa)) )
+                ax.scatter(float(dist[i][0][0] + dist_orig), float(dist[i][0][2]))
+                #ax.scatter(float(dist[i][0][0] + 2.40), float(dist[i][0][2] * np.sin(np.arccos((3.35/float(dist[i][0][2])) * np.pi / 180.)) ))
+                ax.grid(True)               
+                ax.imshow(img, extent=[0, dim_x, 0, dim_y])               
+                print("x", str(dist[i][0][0]))
+                print("y", str(dist[i][0][1]))
+                print("z", str(dist[i][0][2]))
+        fig.canvas.draw()
+
+                #draw_boxed_text(background_eye, "first", (200 + (int(dist[i][0][0] * 50)), int(dist[i][0][2] * 50)), (0, 255, 0))
+                #cv2.circle(background_eye, (200 + (int(dist[i][0][0] * 50)), int(dist[i][0][2] * 50)), radius=8, color=(0, 255, 0), thickness=-1)
                 #print(dist[i][0][2])
         
                 #f = open("test_asse_x.csv", "a+")
                 #f.write(str(dist[i][0][1]) + "," + str(dist[i][0][2]) + "\n")
-                #print("x", str(dist[i][0][0]))
-                #print("z", str(dist[i][0][2]))
+               
                 #f.close()
 
         for j in range(len(dist2)):

@@ -26,6 +26,10 @@ from utils.constants import *
 import pyrealsense2 as rs
 import queue
 import logging
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib import pyplot as plt
+
 
 logging.basicConfig(level=logging.DEBUG,
                     format='(%(threadName)-9s) %(message)s',)
@@ -116,7 +120,7 @@ class TrtThread(threading.Thread):
                 color_frame, aligned_depth_frame = self.cam.get_images(self.cam.get_pipeline(), filters=True)                
                 #Convert images to numpy arrays
                 img, colorized_depth = self.cam.get_image_data(color_frame, aligned_depth_frame, colorizer)
-                
+
                 if not self.frame_queue.full():
                     self.frame_queue.put(cv2.resize(img, (600, 338)))
 
@@ -133,7 +137,7 @@ class TrtThread(threading.Thread):
                     
                 if not self.distance_queue.full():
                     self.distance_queue.put(distances)
-                print("current fps: " + str(fps))
+                #print("current fps: " + str(fps))
                 
                 toc = time.time()
                 curr_fps = 1.0 / (toc - tic)
@@ -156,9 +160,31 @@ def birdEyeViewer(distance_queue, distance_queue2, frame_queue, vis_frame, vis):
     logging.debug("Bird-eye viewer")
 
     dist, dist2, reprj_point = [], [], []
+    
+    imga = plt.imread("lab.png")
+    fig = plt.figure(figsize=(4,8))
+    ax = fig.add_subplot(111)
+    ax.grid(True)
+    plt.ion()
+    
+    f1 = np.linspace(2.54, 3.75, num=100)
+    f1_y = np.linspace(6.67, 6.67, num=100)
+	
+    f2 = np.linspace(2.54, 2.54, num=100)
+    f2_y = np.linspace(4.35, 13.0, num=100)
 
+    f3 = np.linspace(2.54, 1.0, num=100)
+    f3_y = np.linspace(9.05, 9.05, num=100)
+
+    f4 = np.linspace(2.54, 1.0, num=100)
+    f4_y = np.linspace(13.05, 13.05, num=100)
+
+    fig.show()
+    fig.canvas.draw()
+
+    cont = 0
     while True:
-        background_eye = np.full((800,525,3), 125, dtype=np.uint8) # background for bird's eye
+        background_eye = cv2.imread("lab.png", -1) #np.full((800,525,3), 125, dtype=np.uint8) # background for bird's eye
 
         key = cv2.waitKey(1)
         if key == 27:  # ESC key: quit program
@@ -179,14 +205,15 @@ def birdEyeViewer(distance_queue, distance_queue2, frame_queue, vis_frame, vis):
                 reprj_point = rs.rs2_transform_point_to_point(depth_to_color_extrin, list(dist2[0][0]))
                 #print(reprj_point)
         """
-
-        img = vis.draw_bird_eye(background_eye, dist, dist2, reprj_point)
-        cv2.imshow("Bird eye viewer", img)
+        if cont % 10  == 0:
+            img = vis.draw_bird_eye(background_eye, dist, dist2, reprj_point, fig, ax, [f1, f1_y, f2, f2_y, f3, f3_y, f4, f4_y], imga)
+        #cv2.imshow("Bird eye viewer", img)
         
         if vis_frame: # visualize rgb image
             if not frame_queue.empty():
                 cv2.imshow("Frame viewer", frame_queue.get())
-
+        
+        cont += 1
     return
 
 
@@ -221,7 +248,8 @@ def calculate_distances(aligned_depth_frame, bb_values, profile, balance, intrDe
         depth = depth * depth_scale
         z_axis = np.mean(depth)
         try:
-            distances.append([uf.convert_depth_pixel_to_metric_coordinate(uf.depth_optimized(z_axis, balance), float(bb[4]), float(bb[5]), intrDepth), bb[4], bb[5], conn_device, depth_to_color_extrin]) 
+            #distances.append([uf.convert_depth_pixel_to_metric_coordinate(uf.depth_optimized(z_axis, balance), float(bb[4]), float(bb[5]), intrDepth), bb[4], bb[5], conn_device, depth_to_color_extrin])
+            distances.append([uf.convert_depth_pixel_to_metric_coordinate(z_axis, float(bb[4]), float(bb[5]), intrDepth), bb[4], bb[5], conn_device, depth_to_color_extrin]) 
         except RuntimeError:
             pass
     
@@ -273,7 +301,7 @@ def main():
     vis = BBoxVisualization(cls_dict)
     
     distance_queue = queue.Queue(100)
-    frame_queue = queue.Queue(2)
+    frame_queue = queue.Queue(10)
 
     distance_queue2 = queue.Queue(100)
 

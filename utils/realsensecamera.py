@@ -17,7 +17,7 @@ class RealSenseCamera():
 		self.depth_sensor = self.dev.first_depth_sensor()
 		self.depth_sensor.set_option(rs.option.visual_preset, 3) # set high accuracy: https://github.com/IntelRealSense/librealsense/issues/2577#issuecomment-432137634
 		self.colorizer = rs.colorizer()
-		self.colorizer.set_option(rs.option.max_distance,15)#[0-16]
+		self.colorizer.set_option(rs.option.max_distance,16)#[0-16]
 		self.align = rs.align(rs.stream.color)
 
 		######################################################
